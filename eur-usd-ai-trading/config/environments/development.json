@@ -1,0 +1,15 @@
+{
+    "debug": true,
+    "testing": true,
+    "database": {
+        "path": "data/dev_trading_data.db"
+    },
+    "model_settings": {
+        "lstm": {
+            "epochs": 10
+        },
+        "gru": {
+            "epochs": 10
+        }
+    }
+}

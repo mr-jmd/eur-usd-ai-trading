@@ -1,0 +1,115 @@
+# EUR/USD AI Trading System - .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Data files (keep structure, ignore content)
+data/raw/*
+data/processed/*
+data/historical/*
+!data/*/.gitkeep
+
+# Models (too large for git)
+models/*.h5
+models/*.pkl
+models/*.joblib
+models/checkpoints/*
+!models/.gitkeep
+
+# Logs
+logs/*.log
+logs/*/*.log
+*.log
+
+# Backups
+backups/*
+!backups/.gitkeep
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# API Keys and secrets
+config/secrets.json
+config/production.json
+*.key
+*.pem
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Results and outputs
+results/*.png
+results/*.jpg
+results/*.pdf
+results/reports/*
+!results/.gitkeep
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Monitoring
+monitoring/data/*
+!monitoring/.gitkeep

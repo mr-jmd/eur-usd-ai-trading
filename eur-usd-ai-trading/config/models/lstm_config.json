@@ -1,0 +1,32 @@
+{
+    "architecture": "LSTM",
+    "layers": [
+        {
+            "type": "LSTM",
+            "units": 50,
+            "return_sequences": true
+        },
+        {
+            "type": "Dropout",
+            "rate": 0.2
+        },
+        {
+            "type": "LSTM",
+            "units": 50,
+            "return_sequences": false
+        },
+        {
+            "type": "Dropout",
+            "rate": 0.2
+        },
+        {
+            "type": "Dense",
+            "units": 1
+        }
+    ],
+    "optimizer": "adam",
+    "loss": "mse",
+    "metrics": [
+        "mae"
+    ]
+}

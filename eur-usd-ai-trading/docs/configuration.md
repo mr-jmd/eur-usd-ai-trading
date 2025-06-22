@@ -1,0 +1,3 @@
+# Configuración
+
+Guía de configuración del sistema...

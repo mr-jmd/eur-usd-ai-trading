@@ -1,0 +1,112 @@
+{
+    "project": {
+        "name": "EUR/USD AI Trading System",
+        "version": "1.0.0",
+        "description": "Sistema de trading inteligente para EUR/USD",
+        "authors": [
+            "Juan Manuel Amaya Cadavid",
+            "Julio Cesar Jiménez García"
+        ],
+        "institution": "Instituto Tecnológico Metropolitano"
+    },
+    "data_sources": {
+        "price_symbol": "EURUSD=X",
+        "news_api_key": "YOUR_NEWS_API_KEY_HERE",
+        "twitter_api_key": "YOUR_TWITTER_API_KEY_HERE",
+        "alpha_vantage_key": "YOUR_ALPHA_VANTAGE_KEY_HERE",
+        "update_interval_minutes": 60,
+        "max_historical_days": 730
+    },
+    "model_settings": {
+        "ensemble_weights": {
+            "lstm": 0.4,
+            "gru": 0.4,
+            "random_forest": 0.2
+        },
+        "lstm": {
+            "sequence_length": 60,
+            "hidden_units": [
+                50,
+                50
+            ],
+            "dropout_rate": 0.2,
+            "epochs": 100,
+            "batch_size": 32
+        },
+        "gru": {
+            "sequence_length": 60,
+            "hidden_units": [
+                100,
+                100
+            ],
+            "dropout_rate": 0.2,
+            "epochs": 100,
+            "batch_size": 32,
+            "attention": true
+        },
+        "random_forest": {
+            "n_estimators": 100,
+            "max_depth": 10,
+            "random_state": 42
+        },
+        "min_confidence_threshold": 0.65,
+        "retrain_interval_days": 7,
+        "validation_split": 0.2
+    },
+    "trading_settings": {
+        "auto_trading_enabled": false,
+        "max_position_size": 0.1,
+        "stop_loss_pct": 0.02,
+        "take_profit_pct": 0.04,
+        "risk_per_trade": 0.02,
+        "max_daily_trades": 5,
+        "trading_hours": {
+            "start": "09:00",
+            "end": "17:00",
+            "timezone": "UTC"
+        }
+    },
+    "sentiment_settings": {
+        "sentiment_weight": 0.3,
+        "news_lookback_hours": 24,
+        "min_impact_score": 0.5,
+        "bert_model": "ProsusAI/finbert",
+        "max_news_per_update": 50
+    },
+    "database": {
+        "type": "sqlite",
+        "path": "data/trading_data.db",
+        "backup_interval_hours": 6,
+        "max_backup_files": 30,
+        "connection_pool_size": 10
+    },
+    "alerts": {
+        "email_enabled": false,
+        "email_smtp": "smtp.gmail.com",
+        "email_port": 587,
+        "email_user": "your_email@gmail.com",
+        "email_password": "your_app_password",
+        "alert_recipients": [
+            "recipient@email.com"
+        ],
+        "alert_levels": [
+            "ERROR",
+            "HIGH",
+            "CRITICAL"
+        ]
+    },
+    "dashboard": {
+        "host": "localhost",
+        "port": 8501,
+        "auto_refresh_seconds": 300,
+        "theme": "dark",
+        "cache_ttl_seconds": 60
+    },
+    "logging": {
+        "level": "INFO",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "max_file_size_mb": 10,
+        "backup_count": 5,
+        "enable_console": true
+    }
+}

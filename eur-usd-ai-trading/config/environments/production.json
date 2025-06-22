@@ -1,0 +1,10 @@
+{
+    "debug": false,
+    "testing": false,
+    "alerts": {
+        "email_enabled": true
+    },
+    "trading_settings": {
+        "auto_trading_enabled": true
+    }
+}
