@@ -51,44 +51,184 @@ class FeatureEngineer:
     def prepare_features(self, df: pd.DataFrame) -> Dict[str, np.ndarray]:
         """Prepara características para el modelo"""
         
-        # Características técnicas
-        technical_features = [
-            'Close', 'Volume', 'SMA_20', 'SMA_50', 'EMA_12', 'EMA_26',
+        logger.info(f"Input DataFrame shape: {df.shape}")
+        logger.info(f"DataFrame columns: {df.columns.tolist()}")
+        
+        # Verificar que el DataFrame no esté vacío
+        if df.empty:
+            logger.error("Input DataFrame is empty")
+            return {
+                'prices': np.array([]),
+                'features': np.array([]),
+                'feature_names': [],
+                'original_prices': np.array([])
+            }
+        
+        # Normalizar nombres de columnas (Yahoo Finance usa mayúsculas)
+        df_normalized = df.copy()
+        
+        # Mapear columnas a nombres estándar
+        column_mapping = {
+            'Close': 'close',
+            'Open': 'open', 
+            'High': 'high',
+            'Low': 'low',
+            'Volume': 'volume'
+        }
+        
+        for old_name, new_name in column_mapping.items():
+            if old_name in df_normalized.columns:
+                df_normalized[new_name] = df_normalized[old_name]
+        
+        # Verificar columnas esenciales
+        required_columns = ['close']
+        missing_columns = [col for col in required_columns if col not in df_normalized.columns]
+        
+        if missing_columns:
+            logger.error(f"Missing required columns: {missing_columns}")
+            logger.error(f"Available columns: {df_normalized.columns.tolist()}")
+            return {
+                'prices': np.array([]),
+                'features': np.array([]),
+                'feature_names': [],
+                'original_prices': np.array([])
+            }
+        
+        # Características técnicas disponibles
+        potential_features = [
+            'close', 'volume', 'SMA_20', 'SMA_50', 'EMA_12', 'EMA_26',
             'MACD', 'MACD_Signal', 'RSI', 'BB_Upper', 'BB_Lower'
         ]
         
+        # Usar solo las características que existen
+        available_features = [col for col in potential_features if col in df_normalized.columns]
+        
+        if not available_features:
+            logger.error("No valid features found in DataFrame")
+            return {
+                'prices': np.array([]),
+                'features': np.array([]),
+                'feature_names': [],
+                'original_prices': np.array([])
+            }
+        
+        logger.info(f"Using features: {available_features}")
+        
+        # Seleccionar solo características disponibles
+        df_features = df_normalized[available_features].copy()
+        
         # Limpiar datos faltantes
-        df_clean = df[technical_features].fillna(method='ffill').fillna(method='bfill')
-                
-        # Características derivadas
-        df_clean['Price_Change'] = df_clean['Close'].pct_change()
-        df_clean['Volume_Change'] = df_clean['Volume'].pct_change()
-        df_clean['Volatility'] = df_clean['Close'].rolling(window=20).std()
-        df_clean['Price_Position'] = (df_clean['Close'] - df_clean['BB_Lower']) / (df_clean['BB_Upper'] - df_clean['BB_Lower'])
+        logger.info(f"NaN values before cleaning: {df_features.isna().sum().sum()}")
+        df_features = df_features.fillna(method='ffill').fillna(method='bfill')
+        
+        # Si aún hay NaN, llenar con la media
+        if df_features.isna().sum().sum() > 0:
+            df_features = df_features.fillna(df_features.mean())
+        
+        logger.info(f"NaN values after cleaning: {df_features.isna().sum().sum()}")
+        
+        # Verificar que tenemos datos después de la limpieza
+        if df_features.empty:
+            logger.error("DataFrame is empty after cleaning")
+            return {
+                'prices': np.array([]),
+                'features': np.array([]),
+                'feature_names': [],
+                'original_prices': np.array([])
+            }
+        
+        # Características derivadas (solo si tenemos suficientes datos)
+        if len(df_features) > 1:
+            if 'close' in df_features.columns:
+                df_features['Price_Change'] = df_features['close'].pct_change().fillna(0)
+            
+            if 'volume' in df_features.columns and len(df_features) > 1:
+                df_features['Volume_Change'] = df_features['volume'].pct_change().fillna(0)
+            
+            if len(df_features) >= 20 and 'close' in df_features.columns:
+                df_features['Volatility'] = df_features['close'].rolling(window=20).std().fillna(0)
+            else:
+                df_features['Volatility'] = 0
+            
+            if 'BB_Upper' in df_features.columns and 'BB_Lower' in df_features.columns and 'close' in df_features.columns:
+                bb_range = df_features['BB_Upper'] - df_features['BB_Lower']
+                bb_range = bb_range.replace(0, 1)  # Evitar división por cero
+                df_features['Price_Position'] = (df_features['close'] - df_features['BB_Lower']) / bb_range
+                df_features['Price_Position'] = df_features['Price_Position'].fillna(0.5)
+            else:
+                df_features['Price_Position'] = 0.5
         
         # Remover filas con NaN después de los cálculos
-        df_clean = df_clean.dropna()
+        df_features = df_features.dropna()
         
+        if df_features.empty:
+            logger.error("DataFrame is empty after feature engineering")
+            return {
+                'prices': np.array([]),
+                'features': np.array([]),
+                'feature_names': [],
+                'original_prices': np.array([])
+            }
+        
+        logger.info(f"Features after engineering: {df_features.shape}")
+        
+        # Extraer precios y características
+        if 'close' in df_features.columns:
+            prices = df_features['close'].values
+            original_prices = prices.copy()
+            
+            # Separar características (todo excepto close)
+            feature_columns = [col for col in df_features.columns if col != 'close']
+            if feature_columns:
+                features = df_features[feature_columns].values
+            else:
+                # Si no hay otras características, usar solo el precio
+                features = prices.reshape(-1, 1)
+                feature_columns = ['close']
+        else:
+            logger.error("No 'close' column found after processing")
+            return {
+                'prices': np.array([]),
+                'features': np.array([]),
+                'feature_names': [],
+                'original_prices': np.array([])
+            }
+        
+        logger.info(f"Prices shape: {prices.shape}")
+        logger.info(f"Features shape: {features.shape}")
+        
+        # Verificar que tenemos datos válidos
+        if len(prices) == 0 or len(features) == 0:
+            logger.error("Empty prices or features arrays")
+            return {
+                'prices': np.array([]),
+                'features': np.array([]),
+                'feature_names': [],
+                'original_prices': np.array([])
+            }
+        
+        # Escalar datos
         if not self.is_fitted:
+            logger.info("Fitting scalers...")
             # Escalar precios (target)
-            prices = df_clean['Close'].values.reshape(-1, 1)
-            self.price_scaler.fit(prices)
+            self.price_scaler.fit(prices.reshape(-1, 1))
             
             # Escalar características
-            features = df_clean.drop(['Close'], axis=1)
             self.feature_scaler.fit(features)
             self.is_fitted = True
         
         # Aplicar escalado
-        scaled_prices = self.price_scaler.transform(df_clean['Close'].values.reshape(-1, 1))
-        features = df_clean.drop(['Close'], axis=1)
+        scaled_prices = self.price_scaler.transform(prices.reshape(-1, 1)).flatten()
         scaled_features = self.feature_scaler.transform(features)
         
+        logger.info(f"Scaled prices shape: {scaled_prices.shape}")
+        logger.info(f"Scaled features shape: {scaled_features.shape}")
+        
         return {
-            'prices': scaled_prices.flatten(),
+            'prices': scaled_prices,
             'features': scaled_features,
-            'feature_names': features.columns.tolist(),
-            'original_prices': df_clean['Close'].values
+            'feature_names': feature_columns,
+            'original_prices': original_prices
         }
     
     def create_training_data(self, prepared_data: Dict, sequence_length: int = 60) -> Dict:
@@ -96,6 +236,8 @@ class FeatureEngineer:
         
         prices = prepared_data['prices']
         features = prepared_data['features']
+        
+        logger.info(f"Creating training data with {len(prices)} price points and {features.shape[1]} features")
         
         # Crear secuencias de precios para LSTM/GRU
         X_price_seq, y_price = self.create_sequences(prices, sequence_length)
@@ -112,6 +254,7 @@ class FeatureEngineer:
         # Crear etiquetas direccionales (clasificación)
         y_direction = []
         original_prices = prepared_data['original_prices']
+        
         for i in range(sequence_length, len(original_prices)-1):
             current_price = original_prices[i]
             next_price = original_prices[i+1]
@@ -125,13 +268,20 @@ class FeatureEngineer:
         
         y_direction = np.array(y_direction)
         
-        # Ajustar tamaños
+        # Ajustar tamaños para que coincidan
         min_length = min(len(X_price_seq), len(y_direction))
         X_price_seq = X_price_seq[:min_length]
         X_features_seq = X_features_seq[:min_length]
         X_current_features = X_current_features[:min_length]
         y_price = y_price[:min_length]
         y_direction = y_direction[:min_length]
+        
+        logger.info(f"Training data created:")
+        logger.info(f"  - Price sequences: {X_price_seq.shape}")
+        logger.info(f"  - Feature sequences: {X_features_seq.shape}")
+        logger.info(f"  - Current features: {X_current_features.shape}")
+        logger.info(f"  - Price targets: {y_price.shape}")
+        logger.info(f"  - Direction targets: {y_direction.shape}")
         
         return {
             'X_price_sequences': X_price_seq,
@@ -462,7 +612,7 @@ class EnsembleModel:
         logger.info("Entrenamiento del ensemble completado")
     
     def predict(self, recent_data: pd.DataFrame, sentiment_score: float = 0.0) -> ModelPrediction:
-        """Realiza predicción ensemble"""
+        """Realiza predicción ensemble con manejo de modelos faltantes"""
         if not self.is_trained:
             raise ValueError("Ensemble must be trained before prediction")
         
@@ -477,33 +627,61 @@ class EnsembleModel:
         X_features = prepared_data['features'][-60:].reshape(1, 60, -1)
         X_current = prepared_data['features'][-1]
         
-        # Predicciones de cada modelo
-        lstm_pred = self.lstm_model.predict(X_price, X_features)
-        gru_pred = self.gru_model.predict(X_price, X_features)
-        rf_pred = self.rf_model.predict(X_current)
+        predictions = []
+        weights = []
+        
+        # Predicción LSTM
+        if self.lstm_model is not None and self.lstm_model.is_trained:
+            try:
+                lstm_pred = self.lstm_model.predict(X_price, X_features)
+                predictions.append(lstm_pred)
+                weights.append(0.4)
+                logger.info("LSTM prediction successful")
+            except Exception as e:
+                logger.warning(f"LSTM prediction failed: {e}")
+        
+        # Predicción GRU
+        if self.gru_model is not None and self.gru_model.is_trained:
+            try:
+                gru_pred = self.gru_model.predict(X_price, X_features)
+                predictions.append(gru_pred)
+                weights.append(0.4)
+                logger.info("GRU prediction successful")
+            except Exception as e:
+                logger.warning(f"GRU prediction failed: {e}")
+        
+        # Predicción Random Forest
+        if self.rf_model is not None:
+            try:
+                rf_pred = self.rf_model.predict(X_current)
+                predictions.append(rf_pred)
+                weights.append(0.2)
+                logger.info("Random Forest prediction successful")
+            except Exception as e:
+                logger.warning(f"Random Forest prediction failed: {e}")
+        
+        if not predictions:
+            raise ValueError("No models available for prediction")
+        
+        # Normalizar pesos
+        total_weight = sum(weights)
+        normalized_weights = [w/total_weight for w in weights]
         
         # Combinar predicciones (weighted average)
-        weights = {'lstm': 0.4, 'gru': 0.4, 'rf': 0.2}
-        
-        final_price = (
-            lstm_pred.price_prediction * weights['lstm'] +
-            gru_pred.price_prediction * weights['gru'] +
-            rf_pred.price_prediction * weights['rf']
-        )
+        final_price = sum(pred.price_prediction * weight 
+                        for pred, weight in zip(predictions, normalized_weights))
         
         # Determinar dirección final (voto mayoritario)
-        directions = [lstm_pred.direction_prediction, gru_pred.direction_prediction, rf_pred.direction_prediction]
-        final_direction = max(set(directions), key=directions.count)
+        directions = [pred.direction_prediction for pred in predictions]
+        direction_counts = {direction: directions.count(direction) for direction in set(directions)}
+        final_direction = max(direction_counts, key=direction_counts.get)
         
         # Calcular confianza promedio ponderada
-        final_confidence = (
-            lstm_pred.confidence * weights['lstm'] +
-            gru_pred.confidence * weights['gru'] +
-            rf_pred.confidence * weights['rf']
-        )
+        final_confidence = sum(pred.confidence * weight 
+                            for pred, weight in zip(predictions, normalized_weights))
         
         # Incorporar análisis de sentimiento
-        sentiment_influence = abs(sentiment_score) * 0.3  # Factor de influencia del sentimiento
+        sentiment_influence = abs(sentiment_score) * 0.3
         
         # Ajustar confianza basada en sentimiento
         if sentiment_score > 0.1 and final_direction == 'UP':
@@ -512,6 +690,8 @@ class EnsembleModel:
             final_confidence = min(1.0, final_confidence + sentiment_influence)
         else:
             final_confidence = max(0.1, final_confidence - sentiment_influence)
+        
+        logger.info(f"Ensemble prediction: {final_direction} ({final_confidence:.2f}) using {len(predictions)} models")
         
         return ModelPrediction(
             price_prediction=final_price,
@@ -532,21 +712,84 @@ class EnsembleModel:
     def load_models(self, path_prefix: str = "models/"):
         """Carga todos los modelos"""
         try:
-            self.lstm_model = LSTMModel()
-            self.lstm_model.model = keras.models.load_model(f"{path_prefix}lstm_model.h5")
-            self.lstm_model.is_trained = True
-            
-            self.gru_model = GRUModel()
-            self.gru_model.model = keras.models.load_model(f"{path_prefix}gru_model.h5")
-            self.gru_model.is_trained = True
-            
-            self.rf_model = joblib.load(f"{path_prefix}rf_model.pkl")
+            # Cargar feature engineer primero
             self.feature_engineer = joblib.load(f"{path_prefix}feature_engineer.pkl")
             
-            self.is_trained = True
-            logger.info("Modelos cargados exitosamente")
+            # Cargar modelos con configuración personalizada
+            import tensorflow as tf
+            
+            # Configurar métricas personalizadas
+            custom_objects = {
+                'mse': tf.keras.metrics.MeanSquaredError(),
+                'mae': tf.keras.metrics.MeanAbsoluteError(),
+                'accuracy': tf.keras.metrics.Accuracy()
+            }
+            
+            # Cargar LSTM
+            self.lstm_model = LSTMModel()
+            try:
+                self.lstm_model.model = tf.keras.models.load_model(
+                    f"{path_prefix}lstm_model.h5", 
+                    custom_objects=custom_objects,
+                    compile=False  # No compilar automáticamente
+                )
+                # Re-compilar con métricas conocidas
+                self.lstm_model.model.compile(
+                    optimizer='adam',
+                    loss={'price_output': 'mse', 'direction_output': 'sparse_categorical_crossentropy'},
+                    metrics={'price_output': ['mae'], 'direction_output': ['accuracy']}
+                )
+                self.lstm_model.is_trained = True
+                logger.info("LSTM model loaded successfully")
+            except Exception as e:
+                logger.warning(f"Failed to load LSTM model: {e}")
+                self.lstm_model = None
+            
+            # Cargar GRU
+            self.gru_model = GRUModel()
+            try:
+                self.gru_model.model = tf.keras.models.load_model(
+                    f"{path_prefix}gru_model.h5",
+                    custom_objects=custom_objects,
+                    compile=False
+                )
+                # Re-compilar
+                self.gru_model.model.compile(
+                    optimizer='adam',
+                    loss={'price_output': 'mse', 'direction_output': 'sparse_categorical_crossentropy'},
+                    metrics={'price_output': ['mae'], 'direction_output': ['accuracy']}
+                )
+                self.gru_model.is_trained = True
+                logger.info("GRU model loaded successfully")
+            except Exception as e:
+                logger.warning(f"Failed to load GRU model: {e}")
+                self.gru_model = None
+            
+            # Cargar Random Forest
+            try:
+                self.rf_model = joblib.load(f"{path_prefix}rf_model.pkl")
+                logger.info("Random Forest model loaded successfully")
+            except Exception as e:
+                logger.warning(f"Failed to load Random Forest model: {e}")
+                self.rf_model = None
+            
+            # Verificar que al menos un modelo se cargó
+            loaded_models = sum([
+                self.lstm_model is not None and self.lstm_model.is_trained,
+                self.gru_model is not None and self.gru_model.is_trained,
+                self.rf_model is not None
+            ])
+            
+            if loaded_models > 0:
+                self.is_trained = True
+                logger.info(f"Ensemble loaded successfully with {loaded_models}/3 models")
+            else:
+                self.is_trained = False
+                logger.error("No models could be loaded successfully")
+                
         except Exception as e:
-            logger.error(f"Error cargando modelos: {e}")
+            logger.error(f"Error loading models: {e}")
+            self.is_trained = False
 
 # Función de ejemplo de uso
 def train_ensemble_example():

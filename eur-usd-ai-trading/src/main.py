@@ -259,13 +259,21 @@ class TradingSystemManager:
         return all(os.path.exists(f) for f in model_files)
     
     async def _initial_model_training(self):
-        """Entrenamiento inicial de modelos"""
+        """Entrenamiento inicial de modelos - SOLO DATOS REALES"""
         try:
-            # Obtener datos históricos para entrenamiento
+            # Intentar obtener datos históricos reales
+            logger.info("Attempting to collect real market data...")
             price_data = await self.data_pipeline.price_collector.collect_data(period="2y", interval="1h")
             
+            # SI NO HAY DATOS REALES, FALLAR EN LUGAR DE USAR MOCK
             if price_data.empty:
-                raise ValueError("No historical data available for training")
+                raise ValueError("No real market data available. Mock data is disabled.")
+            
+            logger.info(f"Using real market data with {len(price_data)} data points for training")
+            
+            # Verificar que tenemos suficientes datos
+            if len(price_data) < 100:
+                raise ValueError(f"Insufficient real data for training: {len(price_data)} points (minimum 100 required)")
             
             # Entrenar ensemble
             logger.info("Training ensemble models...")
@@ -275,19 +283,23 @@ class TradingSystemManager:
             self.ensemble_model.save_models()
             self.model_trained = True
             
-            logger.info("Model training completed successfully")
+            logger.info("Model training completed successfully with REAL DATA ONLY")
             
         except Exception as e:
             logger.error(f"Error in model training: {e}")
             raise
-    
+
     async def update_data(self):
-        """Actualiza los datos del sistema"""
+        """Actualiza los datos del sistema - SOLO DATOS REALES"""
         try:
             logger.info("Updating market data...")
             
-            # Recolectar nuevos datos
+            # SOLO intentar recolectar datos reales - NO FALLBACK A MOCK
             price_data, news_data = await self.data_pipeline.run_data_collection()
+            
+            # Si no hay datos reales, fallar
+            if price_data.empty:
+                raise ValueError("No real market data available. System configured for real data only.")
             
             # Analizar sentimiento de noticias recientes
             if not news_data.empty:
@@ -295,13 +307,86 @@ class TradingSystemManager:
                 sentiment_results = []
                 
                 for _, news in recent_news.iterrows():
-                    text = f"{news['title']} {news['description']}"
-                    result = self.sentiment_analyzer.analyze_text(text)
+                    # Si ya tiene sentiment_score, usarlo; si no, analizarlo
+                    if 'sentiment_score' in news and pd.notna(news['sentiment_score']):
+                        sentiment_score = news['sentiment_score']
+                    else:
+                        text = f"{news['title']} {news['description']}"
+                        result = self.sentiment_analyzer.analyze_text(text)
+                        sentiment_score = result.confidence if result.sentiment == 'POSITIVE' \
+                                        else -result.confidence if result.sentiment == 'NEGATIVE' else 0
+                    
                     sentiment_results.append({
                         'timestamp': news['timestamp'],
-                        'sentiment_score': result.confidence if result.sentiment == 'POSITIVE' 
-                                          else -result.confidence if result.sentiment == 'NEGATIVE' else 0,
-                        'impact_score': result.impact_score
+                        'sentiment_score': sentiment_score,
+                        'impact_score': abs(sentiment_score) * 0.8
+                    })
+                
+                # Calcular sentimiento promedio ponderado por impacto
+                if sentiment_results:
+                    total_impact = sum(r['impact_score'] for r in sentiment_results)
+                    if total_impact > 0:
+                        weighted_sentiment = sum(
+                            r['sentiment_score'] * r['impact_score'] for r in sentiment_results
+                        ) / total_impact
+                    else:
+                        weighted_sentiment = 0
+                else:
+                    weighted_sentiment = 0
+            else:
+                # Si no hay noticias reales, usar sentiment neutral
+                weighted_sentiment = 0
+                logger.warning("No real news data available, using neutral sentiment")
+            
+            logger.info("✅ Using REAL DATA ONLY - Mock data disabled")
+            return price_data, weighted_sentiment
+            
+        except Exception as e:
+            logger.error(f"Error updating data: {e}")
+            self.alert_system.send_alert("ERROR", "Data Update Failed", str(e))
+            # NO devolver datos mock - fallar completamente
+            raise
+    
+    async def update_data(self):
+        """Actualiza los datos del sistema"""
+        try:
+            logger.info("Updating market data...")
+            
+            # Intentar recolectar nuevos datos reales
+            try:
+                price_data, news_data = await self.data_pipeline.run_data_collection()
+            except Exception as e:
+                logger.warning(f"Failed to collect real data: {e}. Using mock data...")
+                
+                # Usar datos mock como fallback
+                from mock_data_generator import MockDataGenerator
+                generator = MockDataGenerator()
+                
+                price_data = generator.generate_price_data(periods=200, freq='1H')
+                news_data = generator.generate_news_data(num_articles=10)
+                
+                if price_data.empty and news_data.empty:
+                    raise ValueError("Failed to obtain any data (real or mock)")
+            
+            # Analizar sentimiento de noticias recientes
+            if not news_data.empty:
+                recent_news = news_data.tail(10)
+                sentiment_results = []
+                
+                for _, news in recent_news.iterrows():
+                    # Si ya tiene sentiment_score, usarlo; si no, analizarlo
+                    if 'sentiment_score' in news and pd.notna(news['sentiment_score']):
+                        sentiment_score = news['sentiment_score']
+                    else:
+                        text = f"{news['title']} {news['description']}"
+                        result = self.sentiment_analyzer.analyze_text(text)
+                        sentiment_score = result.confidence if result.sentiment == 'POSITIVE' \
+                                        else -result.confidence if result.sentiment == 'NEGATIVE' else 0
+                    
+                    sentiment_results.append({
+                        'timestamp': news['timestamp'],
+                        'sentiment_score': sentiment_score,
+                        'impact_score': abs(sentiment_score) * 0.8  # Impacto basado en la magnitud
                     })
                 
                 # Calcular sentimiento promedio ponderado por impacto

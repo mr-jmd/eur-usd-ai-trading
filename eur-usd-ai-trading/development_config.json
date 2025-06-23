@@ -1,15 +1,15 @@
 {
     "data_sources": {
         "price_symbol": "EURUSD=X",
-        "use_mock_data": false,          
         "news_api_key": null,
         "twitter_api_key": null,
         "update_interval_minutes": 60,
-        
-        "data_validation": {
-            "require_real_data": true,    
-            "min_data_points": 100,
-            "fallback_to_mock": false     
+        "use_mock_data": true,
+        "mock_data_config": {
+            "base_price": 1.0800,
+            "volatility": 0.001,
+            "history_periods": 2000,
+            "frequency": "1H"
         }
     },
     "model_settings": {

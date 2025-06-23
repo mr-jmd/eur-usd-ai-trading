@@ -29,7 +29,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado
+# CSS personalizado mejorado para mejor contraste
 st.markdown("""
 <style>
     .main-header {
@@ -40,28 +40,147 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
+    
     .metric-card {
         background: white;
-        padding: 1rem;
-        border-radius: 10px;
-        border-left: 4px solid #2980b9;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 5px solid #2980b9;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         margin-bottom: 1rem;
+        transition: transform 0.2s;
     }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    
+    /* Señal actual - HOLD */
+    .signal-hold {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border-left-color: #f39c12;
+        color: #8b6914;
+    }
+    
+    /* Señal actual - BUY */
     .signal-buy {
-        background-color: #d4edda;
-        border-color: #28a745;
+        background: linear-gradient(135deg, #d4edda, #00b894);
+        border-left-color: #28a745;
         color: #155724;
     }
+    
+    /* Señal actual - SELL */
     .signal-sell {
-        background-color: #f8d7da;
-        border-color: #dc3545;
+        background: linear-gradient(135deg, #f8d7da, #e17055);
+        border-left-color: #dc3545;
         color: #721c24;
     }
-    .signal-hold {
-        background-color: #fff3cd;
-        border-color: #ffc107;
-        color: #856404;
+    
+    /* Precio Actual - Mayor contraste */
+    .price-card {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+        border-left: 5px solid #2196f3 !important;
+        color: #0d47a1 !important;
+        font-weight: bold;
+    }
+    
+    .price-card h3 {
+        color: #1565c0 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .price-card h2 {
+        color: #0d47a1 !important;
+        font-size: 2.2rem !important;
+        margin: 0.5rem 0 !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .price-card p {
+        color: #1565c0 !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Sentimiento - Mayor contraste */
+    .sentiment-card {
+        background: linear-gradient(135deg, #f3e5f5, #e1bee7) !important;
+        border-left: 5px solid #9c27b0 !important;
+        color: #4a148c !important;
+        font-weight: bold;
+    }
+    
+    .sentiment-card h3 {
+        color: #7b1fa2 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .sentiment-card h2 {
+        color: #4a148c !important;
+        font-size: 2.2rem !important;
+        margin: 0.5rem 0 !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .sentiment-card p {
+        color: #7b1fa2 !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Sentimiento Positivo */
+    .sentiment-positive {
+        background: linear-gradient(135deg, #e8f5e8, #c8e6c9) !important;
+        border-left-color: #4caf50 !important;
+        color: #1b5e20 !important;
+    }
+    
+    .sentiment-positive h2, .sentiment-positive h3, .sentiment-positive p {
+        color: #2e7d32 !important;
+    }
+    
+    /* Sentimiento Negativo */
+    .sentiment-negative {
+        background: linear-gradient(135deg, #ffebee, #ffcdd2) !important;
+        border-left-color: #f44336 !important;
+        color: #b71c1c !important;
+    }
+    
+    .sentiment-negative h2, .sentiment-negative h3, .sentiment-negative p {
+        color: #c62828 !important;
+    }
+    
+    /* Sentimiento Neutral */
+    .sentiment-neutral {
+        background: linear-gradient(135deg, #f5f5f5, #e0e0e0) !important;
+        border-left-color: #9e9e9e !important;
+        color: #424242 !important;
+    }
+    
+    .sentiment-neutral h2, .sentiment-neutral h3, .sentiment-neutral p {
+        color: #616161 !important;
+    }
+    
+    /* Texto más grande y legible */
+    .metric-card h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-card h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+    }
+    
+    .metric-card p {
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -204,7 +323,7 @@ class TradingDashboard:
             }
     
     def render_current_signal(self, data: Dict, config: Dict):
-        """Renderiza la señal actual de trading"""
+        """Renderiza la señal actual de trading con mejor contraste"""
         prediction = data['model_metrics']['last_prediction']
         
         # Determinar señal basada en predicción y configuración
@@ -244,11 +363,15 @@ class TradingDashboard:
             predicted_price = prediction['price']
             price_change = ((predicted_price - current_price) / current_price) * 100
             
+            # Determinar color del cambio de precio
+            change_color = "🟢" if price_change > 0 else "🔴" if price_change < 0 else "⚪"
+            change_sign = "+" if price_change > 0 else ""
+            
             st.markdown(f"""
-            <div class="metric-card">
+            <div class="metric-card price-card">
                 <h3>💰 Precio Actual</h3>
                 <h2>{current_price:.5f}</h2>
-                <p>Predicción: {predicted_price:.5f} ({price_change:+.2f}%)</p>
+                <p>Predicción: {predicted_price:.5f} ({change_sign}{price_change:.2f}%) {change_color}</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -258,13 +381,25 @@ class TradingDashboard:
                 for news in data['news_data'][:5]
             ])
             
-            sentiment_emoji = "😊" if sentiment_score > 0.2 else "😐" if sentiment_score > -0.2 else "😔"
+            # Determinar clase de sentimiento basada en el score
+            if sentiment_score > 0.2:
+                sentiment_class = "sentiment-positive"
+                sentiment_emoji = "😊"
+                sentiment_text = "Positivo"
+            elif sentiment_score < -0.2:
+                sentiment_class = "sentiment-negative"
+                sentiment_emoji = "😔"
+                sentiment_text = "Negativo"
+            else:
+                sentiment_class = "sentiment-neutral"
+                sentiment_emoji = "😐"
+                sentiment_text = "Neutral"
             
             st.markdown(f"""
-            <div class="metric-card">
+            <div class="metric-card {sentiment_class}">
                 <h3>{sentiment_emoji} Sentimiento</h3>
                 <h2>{sentiment_score:.2f}</h2>
-                <p>Análisis de noticias recientes</p>
+                <p>{sentiment_text} - Análisis de noticias</p>
             </div>
             """, unsafe_allow_html=True)
     
