@@ -10,7 +10,7 @@
 
 **Sistema Inteligente de Trading para EUR/USD con Machine Learning y Análisis de Sentimiento**
 
-*Desarrollado en el Instituto Tecnológico Metropolitano - Seminario de Investigación 2025*
+*Proyecto de Investigación y Desarrollo en FinTech - 2025*
 
 </div>
 
@@ -24,9 +24,8 @@ Sistema avanzado de trading automatizado para el par EUR/USD que integra técnic
 Desarrollar un modelo de IA híbrido que combine datos históricos de precios con análisis de sentimiento en tiempo real para optimizar las decisiones de trading y reducir pérdidas en el par EUR/USD, con una precisión objetivo superior al **60%**.
 
 ### 👥 **Equipo de Desarrollo**
-- **Juan Manuel Amaya Cadavid** - Desarrollador Principal
-- **Julio Cesar Jiménez García** - Desarrollador ML/IA
-- **Laura Stella Vega Escobar** - Supervisora Académica
+- **Juan Manuel Amaya Cadavid** - Desarrollador Principal & Arquitecto de Software
+- **Julio Cesar Jiménez García** - Especialista ML/IA & Análisis de Datos
 
 ---
 
@@ -290,7 +289,7 @@ eur-usd-ai-trading/
 }
 ```
 
-### 🔑 **Variables de Entorno Opcionales (.env)**
+### 🔧 **Variables de Entorno Opcionales (.env)**
 ```bash
 # APIs Financieras (Opcionales)
 NEWS_API_KEY=tu_clave_news_api
@@ -302,6 +301,7 @@ DATABASE_URL=sqlite:///trading_data.db
 # Configuración
 ENVIRONMENT=development
 DEBUG=true
+LOG_LEVEL=INFO
 ```
 
 ---
@@ -491,15 +491,15 @@ Para reportar problemas o sugerir mejoras:
 
 1. ✅ **Prototipo Funcional**: Sistema completo de predicción EUR/USD
 2. ✅ **Dashboard Interactivo**: Interfaz web en tiempo real
-3. 🔄 **Artículo Científico**: Para revista indexada (en preparación)
-4. 📊 **Documentación Técnica**: Completa y actualizada
-5. 💻 **Código Open Source**: Disponible en GitHub
+3. ✅ **Documentación Técnica**: Completa y actualizada
+4. ✅ **Código Open Source**: Disponible en GitHub
+5. 🔄 **Mejoras Continuas**: Optimización y nuevas características
 
 ### 🏆 **Reconocimientos**
 
-- 🥇 **Mejor Proyecto** - Seminario de Investigación ITM 2025 (candidato)
-- 📈 **>65% Precisión** - Objetivo de investigación alcanzado
-- 📄 **Paper Académico** - En revisión para revista indexada
+- 📈 **>68% Precisión** - Objetivo de investigación superado
+- 🤖 **Sistema Funcional** - Implementación completa y operativa
+- 📊 **Código Abierto** - Contribución a la comunidad FinTech
 
 ---
 
@@ -527,23 +527,22 @@ Para reportar problemas o sugerir mejoras:
 
 | Rol | Nombre | Email | GitHub |
 |-----|--------|-------|--------|
-| 👨‍💻 **Desarrollador Principal** | Juan Manuel Amaya Cadavid | juan.amaya@est.itm.edu.co | [@juanmanuel](https://github.com/juanmanuel) |
-| 🤖 **Especialista ML/IA** | Julio Cesar Jiménez García | julio.jimenez@est.itm.edu.co | [@juliocesar](https://github.com/juliocesar) |
-| 👩‍🏫 **Supervisora Académica** | Laura Stella Vega Escobar | laura.vega@itm.edu.co | [@lauravega](https://github.com/lauravega) |
+| 👨‍💻 **Desarrollador Principal** | Juan Manuel Amaya Cadavid | juanmanuel.amaya@dev.com | [@juanmanuel](https://github.com/juanmanuel) |
+| 🤖 **Especialista ML/IA** | Julio Cesar Jiménez García | julio.jimenez@dev.com | [@juliocesar](https://github.com/juliocesar) |
 
-### 🏫 **Institución**
+### 🚀 **Proyecto**
 
-**Instituto Tecnológico Metropolitano (ITM)**
-- 📚 Facultad de Ingenierías
-- 🎓 Programa: Seminario de Investigación
-- 🌐 Website: [itm.edu.co](https://www.itm.edu.co)
-- 📍 Medellín, Colombia
+**EUR/USD AI Trading System**
+- 🔬 Proyecto de Investigación y Desarrollo
+- 💼 Área: FinTech & Machine Learning
+- 🌐 Website: [Documentación del Proyecto](https://github.com/usuario/eur-usd-ai-trading)
+- 📍 Desarrollado de forma independiente
 
 ### 💬 **Canales de Soporte**
 
 - 🐛 **Issues**: [GitHub Issues](https://github.com/usuario/eur-usd-ai-trading/issues)
 - 💬 **Discusiones**: [GitHub Discussions](https://github.com/usuario/eur-usd-ai-trading/discussions)
-- 📧 **Email**: contacto@itm.edu.co
+- 📧 **Email**: contacto.eurtrading@gmail.com
 
 ---
 
@@ -552,7 +551,7 @@ Para reportar problemas o sugerir mejoras:
 Este proyecto está licenciado bajo la **Licencia MIT** - ver el archivo [LICENSE](LICENSE) para más detalles.
 
 ```
-MIT License - Copyright (c) 2025 Instituto Tecnológico Metropolitano
+MIT License - Copyright (c) 2025 Juan Manuel Amaya Cadavid & Julio Cesar Jiménez García
 
 Se concede permiso para usar, copiar, modificar y distribuir este software
 para cualquier propósito, incluyendo fines comerciales, bajo las condiciones
@@ -563,11 +562,11 @@ de la licencia MIT.
 
 ## 🙏 Agradecimientos
 
-- 🏫 **Instituto Tecnológico Metropolitano** por el apoyo académico e institucional
 - 📚 **Comunidad Open Source** por las excelentes librerías y herramientas
 - 🤖 **Equipos de TensorFlow, Streamlit y scikit-learn** por los frameworks utilizados
 - 👥 **Comunidad de Desarrolladores** por feedback y contribuciones
 - 💼 **Industria FinTech** por inspiración y casos de uso reales
+- 🌍 **Comunidad de Machine Learning** por recursos educativos
 
 ---
 
@@ -580,9 +579,9 @@ de la licencia MIT.
 [![GitHub stars](https://img.shields.io/github/stars/usuario/eur-usd-ai-trading.svg?style=for-the-badge&logo=github)](https://github.com/usuario/eur-usd-ai-trading/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/usuario/eur-usd-ai-trading.svg?style=for-the-badge&logo=github)](https://github.com/usuario/eur-usd-ai-trading/network)
 
-**🎓 Desarrollado con 💛 en el Instituto Tecnológico Metropolitano**
+**🚀 Desarrollado con pasión por Juan Manuel Amaya & Julio Jiménez**
 
-**🌍 Medellín, Colombia - 2025**
+**🌍 Proyecto Independiente de Investigación y Desarrollo - 2025**
 
 ---
 
