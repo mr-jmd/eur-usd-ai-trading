@@ -1,16 +1,10 @@
 {
     "data_sources": {
         "price_symbol": "EURUSD=X",
-        "use_mock_data": false,          
+        "use_mock_data": false,
         "news_api_key": null,
         "twitter_api_key": null,
-        "update_interval_minutes": 60,
-        
-        "data_validation": {
-            "require_real_data": true,    
-            "min_data_points": 100,
-            "fallback_to_mock": false     
-        }
+        "update_interval_minutes": 60
     },
     "model_settings": {
         "ensemble_weights": {
@@ -20,9 +14,7 @@
         },
         "min_confidence_threshold": 0.65,
         "retrain_interval_days": 7,
-        "sequence_length": 60,
-        "training_epochs": 50,
-        "validation_split": 0.2
+        "sequence_length": 60
     },
     "trading_settings": {
         "auto_trading_enabled": false,
@@ -38,6 +30,18 @@
         "min_impact_score": 0.5,
         "use_mock_sentiment": true
     },
+    "dashboard": {
+        "enable_realtime": true,
+        "auto_refresh_interval_seconds": 30,
+        "max_prediction_history": 100,
+        "show_advanced_metrics": true,
+        "enable_live_charts": true,
+        "cache_predictions": true,
+        "prediction_cache_ttl_seconds": 120,
+        "host": "0.0.0.0",
+        "port": 8501,
+        "theme": "light"
+    },
     "database": {
         "path": "trading_data.db",
         "backup_interval_hours": 6,
@@ -45,17 +49,12 @@
     },
     "alerts": {
         "email_enabled": false,
-        "email_smtp": "smtp.gmail.com",
-        "email_port": 587,
-        "email_user": null,
-        "email_password": null,
-        "alert_recipients": [],
-        "console_alerts": true
+        "console_alerts": true,
+        "dashboard_notifications": true
     },
     "development": {
         "debug_mode": true,
         "log_level": "INFO",
-        "save_predictions": true,
-        "generate_test_reports": true
+        "save_predictions": true
     }
 }

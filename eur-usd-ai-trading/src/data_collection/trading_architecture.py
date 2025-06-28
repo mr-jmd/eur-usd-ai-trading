@@ -101,9 +101,9 @@ class PriceDataCollector(DataCollector):
             # Cachear datos
             self.cache[cache_key] = (data.copy(), datetime.now())
             
-            logger.info(f"✅ Successfully collected {len(data)} EUR/USD data points")
-            logger.info(f"📅 Data range: {data.index[0]} to {data.index[-1]}")
-            logger.info(f"💰 Price range: {data['Close'].min():.5f} - {data['Close'].max():.5f}")
+            logger.info(f"Successfully collected {len(data)} EUR/USD data points")
+            logger.info(f"Data range: {data.index[0]} to {data.index[-1]}")
+            logger.info(f"Price range: {data['Close'].min():.5f} - {data['Close'].max():.5f}")
             
             return data
             
@@ -113,7 +113,7 @@ class PriceDataCollector(DataCollector):
     
     def _validate_and_clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Valida y limpia los datos de Yahoo Finance"""
-        logger.info(f"🔍 Validating data: {len(df)} initial records")
+        logger.info(f"Validating data: {len(df)} initial records")
         
         if df.empty:
             return df
@@ -195,7 +195,7 @@ class PriceDataCollector(DataCollector):
         if 'Stock Splits' not in df.columns:
             df['Stock Splits'] = 0.0
         
-        logger.info(f"✅ Data validation complete: {len(df)} valid records")
+        logger.info(f"Data validation complete: {len(df)} valid records")
         return df
     
     def _add_technical_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -205,7 +205,7 @@ class PriceDataCollector(DataCollector):
                 logger.warning("Empty DataFrame received for technical indicators")
                 return df
             
-            logger.info(f"📊 Adding technical indicators to {len(df)} data points")
+            logger.info(f"Adding technical indicators to {len(df)} data points")
             
             # Crear una copia para trabajar
             df_copy = df.copy()
@@ -328,7 +328,7 @@ class PriceDataCollector(DataCollector):
                 logger.warning(f"Still {nan_count} NaN values after processing, filling with 0")
                 df_copy = df_copy.fillna(0)
             
-            logger.info("✅ Technical indicators added successfully")
+            logger.info("Technical indicators added successfully")
             return df_copy
             
         except Exception as e:
@@ -521,10 +521,10 @@ class DatabaseManager:
         
         conn.commit()
         conn.close()
-        logger.info("✅ Database initialized successfully")
+        logger.info("Database initialized successfully")
     
     def save_price_data(self, df: pd.DataFrame):
-        """Guarda datos de precios en la base de datos"""
+        """Guarda datos de precios en la base de datos - VERSIÓN CORREGIDA"""
         try:
             if df.empty:
                 logger.warning("Empty DataFrame provided to save_price_data")
@@ -533,6 +533,13 @@ class DatabaseManager:
             # Crear una copia del DataFrame para modificar
             df_to_save = df.copy()
             
+            # CORRECCIÓN: Eliminar columnas problemáticas de Yahoo Finance
+            columns_to_remove = ['Repaired?', 'Stock Splits', 'Dividends']
+            for col in columns_to_remove:
+                if col in df_to_save.columns:
+                    logger.info(f"Removing problematic column: {col}")
+                    df_to_save = df_to_save.drop(columns=[col])
+            
             # Normalizar nombres de columnas a minúsculas
             column_mapping = {
                 'Open': 'open',
@@ -540,8 +547,6 @@ class DatabaseManager:
                 'Low': 'low',
                 'Close': 'close',
                 'Volume': 'volume',
-                'Dividends': 'dividends',
-                'Stock Splits': 'stock_splits',
                 'SMA_20': 'sma_20',
                 'SMA_50': 'sma_50', 
                 'SMA_200': 'sma_200',
@@ -602,17 +607,58 @@ class DatabaseManager:
                     else:
                         df_to_save[col] = 0.0
             
-            # Guardar en la base de datos
+            # CORRECCIÓN: Actualizar la tabla de base de datos para incluir nuevas columnas
             conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Verificar si la tabla existe y agregarle las columnas faltantes
+            cursor.execute("PRAGMA table_info(price_data)")
+            existing_columns = [row[1] for row in cursor.fetchall()]
+            
+            new_columns = {
+                'repaired': 'INTEGER DEFAULT 0',
+                'dividends': 'REAL DEFAULT 0',
+                'stock_splits': 'REAL DEFAULT 0'
+            }
+            
+            for col_name, col_type in new_columns.items():
+                if col_name not in existing_columns:
+                    try:
+                        cursor.execute(f"ALTER TABLE price_data ADD COLUMN {col_name} {col_type}")
+                        logger.info(f"Added column {col_name} to price_data table")
+                    except sqlite3.OperationalError as e:
+                        logger.warning(f"Could not add column {col_name}: {e}")
+            
+            conn.commit()
+            
+            # Guardar en la base de datos
             df_to_save.to_sql('price_data', conn, if_exists='append', index_label='timestamp')
             conn.close()
             
-            logger.info(f"✅ Saved {len(df_to_save)} price records to database")
+            logger.info(f"Saved {len(df_to_save)} price records to database")
             
         except Exception as e:
             logger.error(f"Error saving price data to database: {e}")
             logger.error(f"DataFrame columns: {df.columns.tolist()}")
             logger.error(f"DataFrame shape: {df.shape}")
+            
+            # Intentar guardar solo las columnas básicas como fallback
+            try:
+                basic_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+                available_basic = [col for col in basic_columns if col in df.columns]
+                
+                if available_basic:
+                    df_basic = df[available_basic].copy()
+                    df_basic.columns = [col.lower() for col in df_basic.columns]
+                    
+                    conn = sqlite3.connect(self.db_path)
+                    df_basic.to_sql('price_data_basic', conn, if_exists='append', index_label='timestamp')
+                    conn.close()
+                    
+                    logger.info(f"Saved {len(df_basic)} basic price records as fallback")
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback save also failed: {fallback_error}")
     
     def save_news_data(self, df: pd.DataFrame):
         """Guarda datos de noticias en la base de datos"""
@@ -624,7 +670,7 @@ class DatabaseManager:
             conn = sqlite3.connect(self.db_path)
             df.to_sql('news_data', conn, if_exists='append', index=False)
             conn.close()
-            logger.info(f"✅ Saved {len(df)} news records to database")
+            logger.info(f"Saved {len(df)} news records to database")
         except Exception as e:
             logger.error(f"Error saving news data to database: {e}")
     
@@ -651,34 +697,34 @@ class DataPipeline:
     
     async def run_data_collection(self):
         """Ejecuta la recolección completa de datos"""
-        logger.info("🚀 Starting data collection pipeline...")
+        logger.info("Starting data collection pipeline...")
         
         try:
             # Recolectar datos de precios
-            logger.info("📊 Collecting price data...")
+            logger.info("Collecting price data...")
             price_data = await self.price_collector.collect_data()
             
             if not price_data.empty:
-                logger.info(f"✅ Collected {len(price_data)} price records")
+                logger.info(f"Collected {len(price_data)} price records")
                 self.db_manager.save_price_data(price_data)
             else:
-                logger.error("❌ No price data collected")
+                logger.error("No price data collected")
             
             # Recolectar noticias
-            logger.info("📰 Collecting news data...")
+            logger.info("Collecting news data...")
             try:
                 news_data = await self.news_collector.collect_data()
                 
                 if not news_data.empty:
                     # Analizar sentimientos
-                    logger.info("🧠 Analyzing sentiment...")
+                    logger.info("Analyzing sentiment...")
                     combined_text = news_data['title'] + ' ' + news_data['description']
                     news_data['sentiment_score'] = self.sentiment_analyzer.batch_analyze(combined_text.tolist())
                     
-                    logger.info(f"✅ Collected {len(news_data)} news records with sentiment analysis")
+                    logger.info(f"Collected {len(news_data)} news records with sentiment analysis")
                     self.db_manager.save_news_data(news_data)
                 else:
-                    logger.warning("⚠️ No news data collected, using mock data")
+                    logger.warning("No news data collected, using mock data")
                     news_data = self.news_collector._get_mock_news_data()
                     if not news_data.empty:
                         combined_text = news_data['title'] + ' ' + news_data['description']
@@ -691,17 +737,17 @@ class DataPipeline:
                     combined_text = news_data['title'] + ' ' + news_data['description']
                     news_data['sentiment_score'] = self.sentiment_analyzer.batch_analyze(combined_text.tolist())
         
-            logger.info("✅ Data collection pipeline completed")
+            logger.info("Data collection pipeline completed")
             return price_data, news_data
             
         except Exception as e:
-            logger.error(f"❌ Error in data collection pipeline: {e}")
+            logger.error(f"Error in data collection pipeline: {e}")
             return pd.DataFrame(), pd.DataFrame()
 
 # Ejemplo de uso optimizado
 async def main():
     """Función principal de ejemplo"""
-    logger.info("🚀 Starting optimized EUR/USD data collection...")
+    logger.info("Starting optimized EUR/USD data collection...")
     
     # Crear pipeline
     pipeline = DataPipeline()
@@ -711,20 +757,20 @@ async def main():
     
     # Mostrar resultados
     if not price_data.empty:
-        print("\n📊 Price Data Summary:")
+        print("\nPrice Data Summary:")
         print(f"Records: {len(price_data)}")
         print(f"Date range: {price_data.index[0]} to {price_data.index[-1]}")
         print(f"Price range: {price_data['Close'].min():.5f} - {price_data['Close'].max():.5f}")
         print(f"Columns: {list(price_data.columns)}")
         
-        print("\n📈 Latest prices:")
+        print("\nLatest prices:")
         print(price_data[['Open', 'High', 'Low', 'Close', 'RSI', 'MACD']].tail())
     
     if not news_data.empty:
-        print(f"\n📰 News Data: {len(news_data)} articles")
+        print(f"\nNews Data: {len(news_data)} articles")
         print("Recent headlines with sentiment:")
         for _, row in news_data.head(3).iterrows():
-            sentiment = "📈 Positive" if row['sentiment_score'] > 0.1 else "📉 Negative" if row['sentiment_score'] < -0.1 else "📊 Neutral"
+            sentiment = "Positive" if row['sentiment_score'] > 0.1 else "Negative" if row['sentiment_score'] < -0.1 else "Neutral"
             print(f"  {sentiment}: {row['title'][:60]}...")
 
 if __name__ == "__main__":

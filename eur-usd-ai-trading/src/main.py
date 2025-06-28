@@ -122,7 +122,7 @@ class PredictionCache:
         """Almacena una predicción en el cache"""
         self.cache['latest_prediction'] = prediction_data
         self.last_update = datetime.now()
-        logger.info("📊 Predicción almacenada en cache")
+        logger.info("Predicción almacenada en cache")
     
     def get_latest_prediction(self) -> Optional[Dict]:
         """Obtiene la última predicción del cache"""
@@ -163,9 +163,9 @@ class TradingSystemManager:
                 sys.path.append('src/data_collection')
                 from trading_architecture import DataPipeline
                 self.data_pipeline = DataPipeline(self.config.get('data_sources.news_api_key'))
-                logger.info("✅ Data pipeline cargado")
+                logger.info("Data pipeline cargado")
             except ImportError:
-                logger.warning("⚠️ Data pipeline no disponible")
+                logger.warning("Data pipeline no disponible")
             
             try:
                 sys.path.append('src/models')
@@ -176,20 +176,20 @@ class TradingSystemManager:
                 if self._models_exist():
                     self.ensemble_model.load_models()
                     self.model_trained = True
-                    logger.info("✅ Modelos IA cargados")
+                    logger.info("Modelos IA cargados")
                 else:
-                    logger.info("ℹ️ Modelos no encontrados - se entrenarán si es necesario")
+                    logger.info("Modelos no encontrados - se entrenarán si es necesario")
                     
             except ImportError:
-                logger.warning("⚠️ Modelos IA no disponibles")
+                logger.warning("Modelos IA no disponibles")
             
             try:
                 sys.path.append('src/sentiment')
                 from sentiment_backtesting import AdvancedSentimentAnalyzer
                 self.sentiment_analyzer = AdvancedSentimentAnalyzer()
-                logger.info("✅ Analizador de sentimiento cargado")
+                logger.info("Analizador de sentimiento cargado")
             except ImportError:
-                logger.warning("⚠️ Analizador de sentimiento no disponible")
+                logger.warning("Analizador de sentimiento no disponible")
             
             self.is_initialized = True
             
@@ -277,7 +277,7 @@ class TradingSystemManager:
                 try:
                     # Usar modelo IA
                     prediction = self.ensemble_model.predict(price_data.tail(100), sentiment_score)
-                    logger.info("✅ Predicción generada con modelo IA")
+                    logger.info("Predicción generada con modelo IA")
                 except Exception as e:
                     logger.error(f"Error con modelo IA: {e}")
                     prediction = None
@@ -285,7 +285,7 @@ class TradingSystemManager:
             if not prediction:
                 # Fallback a análisis técnico
                 prediction = self._generate_technical_prediction(price_data, sentiment_score)
-                logger.info("✅ Predicción generada con análisis técnico")
+                logger.info("Predicción generada con análisis técnico")
             
             # Preparar datos de predicción
             current_price = price_data['Close'].iloc[-1]
@@ -307,7 +307,7 @@ class TradingSystemManager:
             self.last_prediction = prediction
             self.current_signal = prediction_data['signal']
             
-            logger.info(f"📊 Predicción: {prediction_data['signal']} - "
+            logger.info(f"Predicción: {prediction_data['signal']} - "
                        f"Confianza: {prediction.confidence:.1%} - "
                        f"Precio: {current_price:.5f} -> {prediction.price_prediction:.5f}")
             
@@ -440,7 +440,7 @@ class TradingSystemManager:
         self.is_running = True
         update_interval = self.config.get('dashboard.update_interval_seconds', 60)
         
-        logger.info(f"🔄 Iniciando loop de predicciones (intervalo: {update_interval}s)")
+        logger.info(f"Iniciando loop de predicciones (intervalo: {update_interval}s)")
         
         while self.is_running:
             try:
@@ -453,7 +453,7 @@ class TradingSystemManager:
     def stop(self):
         """Detiene el sistema"""
         self.is_running = False
-        logger.info("🛑 Sistema detenido")
+        logger.info("Sistema detenido")
     
     # Métodos adicionales para compatibilidad
     async def initialize_system(self):
@@ -467,13 +467,13 @@ class TradingSystemManager:
 # Función para ejecutar el sistema principal
 async def run_trading_system():
     """Ejecuta el sistema principal de trading"""
-    logger.info("🚀 Iniciando Sistema Principal de Trading EUR/USD")
+    logger.info("Iniciando Sistema Principal de Trading EUR/USD")
     
     # Crear sistema
     trading_system = TradingSystemManager()
     
     if not trading_system.is_initialized:
-        logger.error("❌ Error inicializando el sistema")
+        logger.error("Error inicializando el sistema")
         return
     
     try:
@@ -482,22 +482,22 @@ async def run_trading_system():
         
         # Mostrar estado inicial
         status = trading_system.get_system_status()
-        logger.info(f"📊 Sistema iniciado - Señal: {status['current_signal']}")
+        logger.info(f"Sistema iniciado - Señal: {status['current_signal']}")
         
         # Iniciar loop de predicciones
         await trading_system.start_prediction_loop()
         
     except KeyboardInterrupt:
-        logger.info("👋 Sistema detenido por el usuario")
+        logger.info("Sistema detenido por el usuario")
         trading_system.stop()
     except Exception as e:
-        logger.error(f"❌ Error en sistema principal: {e}")
+        logger.error(f"Error en sistema principal: {e}")
         trading_system.stop()
 
 # Script principal
 async def main():
     """Función principal"""
-    print("🤖 EUR/USD AI Trading System - Sistema Principal")
+    print("EUR/USD AI Trading System - Sistema Principal")
     print("=" * 60)
     
     await run_trading_system()
